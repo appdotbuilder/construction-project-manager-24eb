@@ -1,16 +1,26 @@
+import { db } from '../db';
+import { projectsTable } from '../db/schema';
 import { type CreateProjectInput, type Project } from '../schema';
 
 export const createProject = async (input: CreateProjectInput): Promise<Project> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new construction project and persisting it in the database.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+  try {
+    // Insert project record
+    const result = await db.insert(projectsTable)
+      .values({
         name: input.name,
-        description: input.description || null,
+        description: input.description,
         start_date: input.start_date,
-        end_date: input.end_date || null,
-        status: input.status || 'planning',
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Project);
+        end_date: input.end_date,
+        status: input.status // This already has a default value from Zod schema
+      })
+      .returning()
+      .execute();
+
+    // Return the created project
+    const project = result[0];
+    return project;
+  } catch (error) {
+    console.error('Project creation failed:', error);
+    throw error;
+  }
 };

@@ -1,17 +1,41 @@
+import { db } from '../db';
+import { otherExpensesTable, projectsTable } from '../db/schema';
 import { type CreateOtherExpenseInput, type OtherExpense } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const createOtherExpense = async (input: CreateOtherExpenseInput): Promise<OtherExpense> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new other expense entry for a project and persisting it in the database.
-    // Should validate that the project exists before creating the expense entry.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+  try {
+    // Validate that the project exists before creating the expense entry
+    const project = await db.select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, input.project_id))
+      .limit(1)
+      .execute();
+
+    if (project.length === 0) {
+      throw new Error(`Project with ID ${input.project_id} does not exist`);
+    }
+
+    // Insert other expense record
+    const result = await db.insert(otherExpensesTable)
+      .values({
         project_id: input.project_id,
         name: input.name,
-        description: input.description || null,
-        price: input.price,
-        expense_date: input.expense_date || null,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as OtherExpense);
+        description: input.description,
+        price: input.price.toString(), // Convert number to string for numeric column
+        expense_date: input.expense_date
+      })
+      .returning()
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    const otherExpense = result[0];
+    return {
+      ...otherExpense,
+      price: parseFloat(otherExpense.price) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Other expense creation failed:', error);
+    throw error;
+  }
 };

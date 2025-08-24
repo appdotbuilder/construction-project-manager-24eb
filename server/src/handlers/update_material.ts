@@ -1,18 +1,54 @@
+import { db } from '../db';
+import { materialsTable } from '../db/schema';
 import { type UpdateMaterialInput, type Material } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const updateMaterial = async (input: UpdateMaterialInput): Promise<Material> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing material entry in the database.
-    // Should throw an error if material is not found.
-    return Promise.resolve({
-        id: input.id,
-        project_id: 1, // Placeholder project_id
-        name: input.name || 'Updated Material',
-        quantity: input.quantity || 1,
-        unit: input.unit || 'piece',
-        price_per_unit: input.price_per_unit || 0,
-        purchase_date: input.purchase_date !== undefined ? input.purchase_date : null,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Material);
+  try {
+    // Build update object with only provided fields
+    const updateData: any = {};
+    
+    if (input.name !== undefined) {
+      updateData['name'] = input.name;
+    }
+    if (input.quantity !== undefined) {
+      updateData['quantity'] = input.quantity.toString();
+    }
+    if (input.unit !== undefined) {
+      updateData['unit'] = input.unit;
+    }
+    if (input.price_per_unit !== undefined) {
+      updateData['price_per_unit'] = input.price_per_unit.toString();
+    }
+    if (input.purchase_date !== undefined) {
+      updateData['purchase_date'] = input.purchase_date;
+    }
+
+    // Only add updated_at if we have fields to update
+    if (Object.keys(updateData).length > 0) {
+      updateData['updated_at'] = new Date();
+    }
+
+    // Update material record
+    const result = await db.update(materialsTable)
+      .set(updateData)
+      .where(eq(materialsTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error(`Material with id ${input.id} not found`);
+    }
+
+    // Convert numeric fields back to numbers before returning
+    const material = result[0];
+    return {
+      ...material,
+      quantity: parseFloat(material.quantity),
+      price_per_unit: parseFloat(material.price_per_unit)
+    };
+  } catch (error) {
+    console.error('Material update failed:', error);
+    throw error;
+  }
 };

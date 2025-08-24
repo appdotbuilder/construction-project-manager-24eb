@@ -21,6 +21,31 @@
       --gradient-color: rgba(255,255,255,0.03);
   }
 }
+
+/* Print styles for receipts */
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  
+  .print\:border-none {
+    border: none !important;
+  }
+  
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+}
 * {
   margin: 0;
   padding: 0;

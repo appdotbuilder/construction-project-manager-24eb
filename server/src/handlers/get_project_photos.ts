@@ -1,7 +1,18 @@
+import { db } from '../db';
+import { projectPhotosTable } from '../db/schema';
 import { type ProjectPhoto } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const getProjectPhotos = async (projectId: number): Promise<ProjectPhoto[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all photos for a specific project from the database.
-    return [];
+  try {
+    const results = await db.select()
+      .from(projectPhotosTable)
+      .where(eq(projectPhotosTable.project_id, projectId))
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Get project photos failed:', error);
+    throw error;
+  }
 };

@@ -1,17 +1,55 @@
+import { db } from '../db';
+import { projectsTable } from '../db/schema';
 import { type UpdateProjectInput, type Project } from '../schema';
+import { eq, sql } from 'drizzle-orm';
 
 export const updateProject = async (input: UpdateProjectInput): Promise<Project> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing construction project in the database.
-    // Should throw an error if project is not found.
-    return Promise.resolve({
-        id: input.id,
-        name: input.name || 'Updated Project',
-        description: input.description !== undefined ? input.description : null,
-        start_date: input.start_date || new Date(),
-        end_date: input.end_date !== undefined ? input.end_date : null,
-        status: input.status || 'planning',
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Project);
+  try {
+    // First check if the project exists
+    const existingProject = await db.select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, input.id))
+      .execute();
+
+    if (existingProject.length === 0) {
+      throw new Error(`Project with id ${input.id} not found`);
+    }
+
+    // Build update object with only provided fields
+    const updateData: any = {
+      updated_at: sql`NOW()` // Always update the updated_at timestamp
+    };
+
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+
+    if (input.description !== undefined) {
+      updateData.description = input.description;
+    }
+
+    if (input.start_date !== undefined) {
+      updateData.start_date = input.start_date;
+    }
+
+    if (input.end_date !== undefined) {
+      updateData.end_date = input.end_date;
+    }
+
+    if (input.status !== undefined) {
+      updateData.status = input.status;
+    }
+
+    // Update the project
+    const result = await db.update(projectsTable)
+      .set(updateData)
+      .where(eq(projectsTable.id, input.id))
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Project update failed:', error);
+    throw error;
+  }
 };
